@@ -2,87 +2,68 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# 1. Security Group: Allow All Inbound Traffic (0.0.0.0/0)
-resource "aws_security_group" "vulnerable_sg" {
-  name        = "open-access-sg"
-  description = "Allows SSH and HTTP from everywhere"
+# VIOLATES: 
+# KMS-001 (Rotation disabled)
+# KMS-002 (Policy allows deletion)
+# KMS-003 (Key is disabled)
+# KMS-004 (Multi-region replication missing region)
+# KMS-005 (Insufficient description)
+# KMS-006 (Missing required tags)
+resource "aws_kms_key" "highly_vulnerable_key" {
+  description             = "Short" # KMS-005: Less than 10 chars
+  deletion_window_in_days = 7
+  is_enabled              = false    # KMS-003: Key is disabled
+  enable_key_rotation     = false    # KMS-001: Rotation not enabled
+  multi_region            = true     # KMS-004: True but replication_region is missing
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Vulnerability: SSH open to the world
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# 2. S3 Bucket: Public Access and No Encryption
-resource "aws_s3_bucket" "vulnerable_bucket" {
-  bucket = "very-secret-data-12345"
-}
-
-# Vulnerability: Explicitly making the bucket public
-resource "aws_s3_bucket_public_access_block" "bad_practice" {
-  bucket = aws_s3_bucket.vulnerable_bucket.id
-
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
-
-# 3. IAM: Over-privileged Role (AdministratorAccess)
-resource "aws_iam_role" "excessive_role" {
-  name = "over-privileged-role"
-
-  assume_role_policy = jsonencode({
+  # KMS-002: Key policy allows anyone (*) to delete the key
+  policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
+        Sid    = "AllowDirectDeletion"
         Effect = "Allow"
         Principal = {
-          Service = "ec2.amazonaws.com"
+          AWS = "*" # Wildcard principal
         }
-      },
+        Action = [
+          "kms:ScheduleKeyDeletion", # Explicitly checked in your _key_policy_allows_deletion
+          "kms:*"
+        ]
+        Resource = "*"
+      }
     ]
   })
-}
 
-resource "aws_iam_role_policy_attachment" "admin_attach" {
-  role       = aws_iam_role.excessive_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess" # Vulnerability: Massive blast radius
-}
-
-# 4. EC2: Unencrypted EBS and IMDSv1 enabled
-resource "aws_instance" "vulnerable_ec2" {
-  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2
-  instance_type = "t2.micro"
-  
-  vpc_security_group_ids = [aws_security_group.vulnerable_sg.id]
-  
-  root_block_device {
-    encrypted = false # Vulnerability: Data at rest not encrypted
-  }
-
-  metadata_options {
-    http_tokens = "optional" # Vulnerability: Allows IMDSv1 (SSRF risk)
-  }
-
+  # KMS-006: Missing 'Environment', 'Owner', and 'CostCenter'
   tags = {
-    Name = "Vulnerable-Node"
+    Project = "SecurityTesting"
   }
+}
+
+# VIOLATES:
+# KMS-007 (Naming convention)
+# KMS-008 (AWS Reserved prefix)
+resource "aws_kms_alias" "bad_alias" {
+  name          = "my-bad-alias" # KMS-007: Missing 'alias/' prefix
+  target_key_id = aws_kms_key.highly_vulnerable_key.key_id
+}
+
+resource "aws_kms_alias" "reserved_alias" {
+  name          = "alias/aws/my-custom-key" # KMS-008: Contains 'aws/' in custom alias
+  target_key_id = aws_kms_key.highly_vulnerable_key.key_id
+}
+
+# VIOLATES:
+# KMS-009 (Dangerous operations)
+# KMS-010 (Missing retiring principal)
+resource "aws_kms_grant" "risky_grant" {
+  name              = "risky-kms-grant"
+  key_id            = aws_kms_key.highly_vulnerable_key.key_id
+  grantee_principal = "arn:aws:iam::123456789012:role/some-role"
+  
+  # KMS-009: Includes ScheduleKeyDeletion and CreateGrant
+  operations = ["Encrypt", "Decrypt", "ScheduleKeyDeletion", "CreateGrant"]
+
+  # KMS-010: retiring_principal is omitted
 }
