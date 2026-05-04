@@ -1,0 +1,120 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceName": {
+      "value": "aks-name"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "dnsPrefix": {
+      "value": "aks-name-dns"
+    },
+    "agentCount": {
+      "value": 3
+    },
+    "agentVMSize": {
+      "value": "Standard_DS2_v2"
+    },
+    "servicePrincipalClientId": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+        },
+        "secretName": "spnclinetid"
+      }
+      //   "value": "32ea7ff9-0cab-4d5b-a729-4b8451717176"
+    },
+    "servicePrincipalClientSecret": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+        },
+        "secretName": "spnclientsecret"
+      }
+      //   "value": "H98SXV.7A5.JBXa2ogorSK0gFU3DSqNMUI"
+    },
+    "kubernetesVersion": {
+      "value": "1.19.9"
+    },
+    "networkPlugin": {
+      "value": "azure"
+    },
+    "enableRBAC": {
+      "value": true
+    },
+    "enablePrivateCluster": {
+      "value": true
+    },
+    "enableHttpApplicationRouting": {
+      "value": true
+    },
+    "linuxAdminUsername": {
+      "value": "vm-user"
+    },
+    "sshRSAPublicKey": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+        },
+        "secretName": "sshrsa1"
+      }
+      //   "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8UMu4mLDs5RwaJiH85Ab0LHnpEmAnOi6dEliysqPrYb91bGEd6hhLIG7KB7r2Fd82hiwcHX1aSCjvlAJn9xF91n9qxIyw0/gWkDhwpHHjO+tLsPgioRw27W0aMDTgJD+fEM1xsJ1xA8d+Mv0Z++UEttD4r8QY1KcIw9TJwIUW4Dcb6JVxb2Zji3FSfWY56aDIMXT+Tg7IwviI6IO/3N9QJUJqB/Al14mdkeGliBEKykq1ncZx8HrdaYzcMdq1AE+5+i6a+pcyacE/UDFwiodagJ0Etv3lzXsX9njrh/da7+1SdzWWR2iNHfYkt5a5tR/LuTR2B0L8g716Xpcs1Rff user@Laert"
+    },
+    // "principalId": {
+    //   "reference": {
+    //     "keyVault": {
+    //       "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+    //     },
+    //     "secretName": "principalId"
+    //   }
+    //   //   "value": "13579747-bf61-43aa-b4ad-c8b4affcac8c"
+    // },
+    "serviceCidr": {
+      "value": "10.1.0.0/16"
+    },
+    "dnsServiceIP": {
+      "value": "10.1.0.10"
+    },
+    "dockerBridgeCidr": {
+      "value": "172.17.0.1/16"
+    },
+    "existingVirtualNetworkName": {
+      "value": "devops-vnet-eastus"
+    },
+    "existingVirtualNetworkResourceGroup": {
+      "value": "devops-vnet-eastus-rg"
+    },
+    "existingSubnetName": {
+      "value": "aks-subnet"
+    },
+    "AAD_ClientAppID": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+        },
+        "secretName": "aadappclientid"
+      }
+      //   "value": "f14dbdac-16fd-43d9-a9e5-c9a8091a1f25"
+    },
+    "AAD_ServerAppID": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+        },
+        "secretName": "aadappserverid"
+      }
+      //   "value": "b091ae81-272c-4385-b7e5-054b325a0de6"
+    },
+    "AAD_ServerAppSecret": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/fd7d53ef-e290-4ab1-937e-fec061c00132/resourceGroups/dev-eus-rg/providers/Microsoft.KeyVault/vaults/k8svaultapp"
+        },
+        "secretName": "aadserversecret"
+      }
+      //   "value": "S.-Z.~Wrff0Q7RJQp9Takq7koNe2Pen_yB"
+    }
+  }
+}
