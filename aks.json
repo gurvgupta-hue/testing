@@ -1,0 +1,317 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Managed Cluster resource."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location of AKS resource."
+      }
+    },
+    "dnsPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Optional DNS prefix to use with hosted Kubernetes API server FQDN."
+      }
+    },
+    "osDiskSizeGB": {
+      "type": "int",
+      "defaultValue": 0,
+      "metadata": {
+        "description": "Disk size (in GiB) to provision for each of the agent pool nodes. This value ranges from 0 to 1023. Specifying 0 will apply the default disk size for that agentVMSize."
+      },
+      "minValue": 0,
+      "maxValue": 1023
+    },
+    "availabilityZones": {
+      "type": "array",
+      "defaultValue": ["1", "2", "3"]
+    },
+    "agentCount": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "The number of agent nodes for the cluster."
+      },
+      "minValue": 1,
+      "maxValue": 100
+    },
+    "minCount": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "maxCount": {
+      "type": "int",
+      "defaultValue": 100
+    },
+    "agentVMSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2_v2",
+      "metadata": {
+        "description": "The size of the Virtual Machine."
+      }
+    },
+    "agentPoolProfilesType": {
+      "type": "string",
+      "defaultValue": "VirtualMachineScaleSets"
+    },
+    "enableAutoscaler": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "linuxAdminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for the Linux Virtual Machines."
+      }
+    },
+    "sshRSAPublicKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Configure all linux machines with the SSH RSA public key string. Your key should include three parts, for example 'ssh-rsa AAAAB...snip...UcyupgH azureuser@linuxvm'"
+      }
+    },
+    "servicePrincipalClientId": {
+      "metadata": {
+        "description": "Client ID (used by cloudprovider)."
+      },
+      "type": "securestring"
+    },
+    "servicePrincipalClientSecret": {
+      "metadata": {
+        "description": "The Service Principal Client Secret."
+      },
+      "type": "securestring"
+    },
+    "osType": {
+      "type": "string",
+      "defaultValue": "Linux",
+      "allowedValues": ["Linux"],
+      "metadata": {
+        "description": "The type of operating system."
+      }
+    },
+    "kubernetesVersion": {
+      "type": "string",
+      "defaultValue": "1.19.9",
+      "metadata": {
+        "description": "The version of Kubernetes."
+      }
+    },
+    "networkPlugin": {
+      "type": "string",
+      "allowedValues": ["azure", "kubenet"],
+      "metadata": {
+        "description": "Network plugin used for building Kubernetes network."
+      }
+    },
+    "maxPods": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "Maximum number of pods that can run on a node."
+      }
+    },
+    "enableRBAC": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Boolean flag to turn on and off of RBAC."
+      }
+    },
+    "enablePrivateCluster": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable private network access to the Kubernetes cluster."
+      }
+    },
+    // "enableHttpApplicationRouting": {
+    //   "type": "bool",
+    //   "defaultValue": true,
+    //   "metadata": {
+    //     "description": "Boolean flag to turn on and off of http application routing."
+    //   }
+    // },
+    "serviceCidr": {
+      "type": "string",
+      "metadata": {
+        "description": "A CIDR notation IP range from which to assign service cluster IPs."
+      }
+    },
+    "dnsServiceIP": {
+      "type": "string",
+      "metadata": {
+        "description": "Containers DNS server IP address."
+      }
+    },
+    "dockerBridgeCidr": {
+      "type": "string",
+      "metadata": {
+        "description": "A CIDR notation IP for Docker bridge."
+      }
+    },
+    // "principalId": {
+    //   "type": "string",
+    //   "metadata": {
+    //     "description": "The objectId of service principal."
+    //   }
+    // },
+    "existingVirtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of an existing VNET that will contain this AKS deployment."
+      }
+    },
+    "existingVirtualNetworkResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the existing VNET resource group"
+      }
+    },
+    "existingSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet name that will contain the App Service Environment"
+      }
+    },
+    "AAD_ClientAppID": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The Application ID for the Client App Service Principal"
+      }
+    },
+    "AAD_ServerAppID": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The Application ID for the Server App Service Principal"
+      }
+    },
+    "AAD_TenantID": {
+      "type": "securestring",
+      "defaultValue": "[subscription().tenantId]",
+      "metadata": {
+        "description": "The Azure AD Tenant where the cluster will reside"
+      }
+    },
+    "AAD_ServerAppSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The Service Principal Secret for the Client App Service Principal"
+      }
+    }
+  },
+  "variables": {
+    "vnetSubnetId": "[resourceId(parameters('existingVirtualNetworkResourceGroup'),'Microsoft.Network/virtualNetworks/subnets',parameters('existingVirtualNetworkName'),parameters('existingSubnetName'))]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2019-06-01",
+      "dependsOn": [
+      ],
+      "type": "Microsoft.ContainerService/managedClusters",
+      "location": "[parameters('location')]",
+      "name": "[parameters('resourceName')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "tags": {
+        "DeptName": "Rx Renewal",
+        "DeployDate": "9/15/2019",
+        "Deployer": "manoj.x.sharma@walgreens.com",
+        "LOB": "RxR",
+        "EnvType": "Non-Production",
+        "Sensitivity": "Non-Sensitive",
+        "SenType": "Not Applicable"
+      },
+      "properties": {
+        "kubernetesVersion": "[parameters('kubernetesVersion')]",
+        "enableRBAC": "[parameters('enableRBAC')]",
+        "dnsPrefix": "[parameters('dnsPrefix')]",
+        "sku": {
+          "name": "Basic",
+          "tier": "Free"
+        },
+        "aadProfile": {
+          "managed": true,
+          "clientAppID": "[parameters('AAD_ClientAppID')]",
+          "serverAppID": "[parameters('AAD_ServerAppID')]",
+          "tenantID": "[parameters('AAD_TenantID')]",
+          "serverAppSecret": "[parameters('AAD_ServerAppSecret')]"
+        },
+        "agentPoolProfiles": [
+          {
+            "name": "agentpool",
+            "osDiskSizeGB": "[parameters('osDiskSizeGB')]",
+            "count": "[parameters('agentCount')]",
+            "minCount": "[parameters('minCount')]",
+            "maxCount": "[parameters('maxCount')]",
+            "vmSize": "[parameters('agentVMSize')]",
+            "osType": "[parameters('osType')]",
+            "orchestratorVersion": "1.19.9",
+            "enableAutoScaling": "[parameters('enableAutoscaler')]",
+            "availabilityZones": "[parameters('availabilityZones')]",
+            "storageProfile": "ManagedDisks",
+            "type": "[parameters('agentPoolProfilesType')]",
+            "maxPods": "[parameters('maxPods')]",
+            "vnetSubnetID": "[variables('vnetSubnetID')]",
+            "enableFIPS": false
+          }
+        ],
+        "linuxProfile": {
+          "adminUsername": "[parameters('linuxAdminUsername')]",
+          "ssh": {
+            "publicKeys": [
+              {
+                "keyData": "[parameters('sshRSAPublicKey')]"
+              }
+            ]
+          }
+        },
+        "servicePrincipalProfile": {
+          "ClientId": "[parameters('servicePrincipalClientId')]",
+          "Secret": "[parameters('servicePrincipalClientSecret')]"
+        },
+        "networkProfile": {
+          "loadBalancerSku": "standard",
+          "networkPlugin": "[parameters('networkPlugin')]",
+          "serviceCidr": "[parameters('serviceCidr')]",
+          "dnsServiceIP": "[parameters('dnsServiceIP')]",
+          "dockerBridgeCidr": "[parameters('dockerBridgeCidr')]",
+          "networkPolicy": "calico"
+        },
+        "privateLinkResources": [
+          {
+            "id": "[concat(resourceId('Microsoft.ContainerService/managedClusters', parameters('resourceName')), '/privateLinkResources/management')]",
+            "name": "management",
+            "type": "Microsoft.ContainerService/managedClusters/privateLinkResources",
+            "groupId": "management",
+            "requiredMembers": ["management"]
+          }
+        ],
+
+        "apiServerAccessProfile": {
+          "enablePrivateCluster": "[parameters('enablePrivateCluster')]",
+          "privateDNSZone": "system"
+        }
+        // "addonProfiles": {
+        //   "httpApplicationRouting": {
+        //     "enabled": "[parameters('enableHttpApplicationRouting')]"
+        //   }
+        // }
+      }
+    }
+  ],
+  "outputs": {
+    "controlPlaneFQDN": {
+      "type": "string",
+      "value": "[reference(concat('Microsoft.ContainerService/managedClusters/', parameters('resourceName'))).fqdn]"
+    }
+  }
+}
