@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "East Us 2"
+    },
+    "applicationGatewayName": {
+      "value": "appGateWayTest"
+    },
+    "tier": {
+      "value": "Standard"
+    },
+    "skuSize": {
+      "value": "Standard_Medium"
+    },
+    "capacity": {
+      "value": 2
+    },
+    "existingVnet": {
+      "value": "devops-vnet-eastus2"
+    },
+    "existingSubnet": {
+      "value": "gate-subnet"
+    },
+    "existingVnetRG": {
+      "value": "devops-vnet-eus2-rg"
+    },
+    "zones": {
+      "value": []
+    },
+    "frontendPort": {
+      "value": 80
+    },
+    "backendPort": {
+      "value": 80
+    },
+    "backendIPAddresses": {
+      "value": [
+          {
+              "IpAddress": "192.169.6.9"
+          },
+          {
+              "IpAddress": "192.169.6.10"
+          },
+          {
+              "IpAddress": "192.169.6.11"
+          }
+      ]
+  },
+    "cookieBasedAffinity": {
+      "value": "Disabled"
+    }
+  }
+}
