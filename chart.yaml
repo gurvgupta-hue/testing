@@ -1,0 +1,44 @@
+---
+# Violation: networking.k8s.io/v1beta1 (Removed in 1.22, replaced by networking.k8s.io/v1)
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: test-ingress
+  labels:
+    app: test-app
+spec:
+  rules:
+  - host: test.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: test-service
+          servicePort: 80
+
+---
+# Violation: rbac.authorization.k8s.io/v1beta1 (Removed in 1.22, replaced by rbac.authorization.k8s.io/v1)
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: test-clusterrole
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+
+---
+# Violation: admissionregistration.k8s.io/v1beta1 (Removed in 1.22, replaced by admissionregistration.k8s.io/v1)
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: test-webhook
+webhooks:
+  - name: mutate.test.local
+    clientConfig:
+      url: "https://my-service.default.svc:443/mutate"
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
