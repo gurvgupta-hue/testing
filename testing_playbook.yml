@@ -1,0 +1,32 @@
+---
+- hosts: all
+  # Rule Violation: 'gather_facts' should be explicitly set (though often defaults to true, explicit is better in strict environments)
+  
+  tasks:
+  # Rule Violation: Missing 'name' statement (name[missing])
+  - command: systemctl restart nginx
+
+  # Rule Violation: Using 'command' instead of 'shell' when using a pipe (|) 
+  # Rule Violation: No 'changed_when' specified for a command module (command-instead-of-module / no-changed-when)
+  - name: Find root in passwd
+    command: cat /etc/passwd | grep root
+
+  # Rule Violation: Unquoted Jinja2 variable in YAML syntax (yaml[truthy])
+  - name: Print a variable
+    debug:
+      msg: {{ unquoted_var }}
+
+  # Rule Violation: Using 'command' (curl) instead of a dedicated module like 'get_url' or 'uri'
+  - name: download a file
+    command: wget http://example.com/file.txt -O /tmp/file.txt
+
+  # Rule Violation: File/Template module missing explicit permissions (mode)
+  - name: Deploy the configuration template
+    template:
+      src: bad_template.j2
+      dest: /etc/app/config.conf
+
+  # Rule Violation: Hardcoded secrets/passwords in plain text
+  - name: Set database password
+    set_fact:
+      db_pass: "SuperSecretPassword123!"
