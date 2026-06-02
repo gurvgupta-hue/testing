@@ -1,0 +1,32 @@
+---
+all:
+  vars:
+    # Rule Violation: Defining complex global variables here instead of 'group_vars/all.yml'.
+    # Rule Violation: Hardcoding cloud provider API credentials in plain text.
+    aws_access_key: "AKIAIOSFODNN7EXAMPLE"
+    aws_secret_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  
+  children:
+    webservers:
+      hosts:
+        # Rule Violation: Using naked IP addresses instead of resolvable DNS names/aliases.
+        "192.168.1.10":
+          # Rule Violation: Hardcoding plain-text SSH passwords.
+          # Rule Violation: Connecting directly as 'root'.
+          # Rule Violation: Disabling StrictHostKeyChecking.
+          ansible_user: root
+          ansible_ssh_pass: "P@ssw0rd123!"
+          ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        
+        "192.168.1.11":
+          ansible_user: admin
+          ansible_ssh_pass: "Admin123!"
+          ansible_become_pass: "Admin123!"
+    
+    databases:
+      hosts:
+        db01.example.com:
+          # Rule Violation: Defining host-specific application variables directly in the inventory.
+          # These should live in a separate 'host_vars/db01.example.com.yml' file.
+          db_port: 3306
+          db_root_pass: "SuperSecretDBPass"
