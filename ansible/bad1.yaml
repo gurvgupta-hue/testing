@@ -1,0 +1,60 @@
+---
+- name: Very Insecure Playbook
+  hosts: all
+  become: yes
+  become_user: root
+  # become_pass: MySecretPassword123!   # ← Never do this!
+
+  vars:
+    db_password: "SuperSecretPass123!@#"   # Hardcoded password (Very Bad)
+    admin_user: "admin"
+    admin_pass: "admin123"                  # Weak + hardcoded
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD..."  # Hardcoded private key
+
+  tasks:
+
+  - name: Disable SELinux (Insecure)
+    selinux:
+      state: disabled
+
+  - name: Install packages
+    apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+    loop:
+      - nginx
+      - mysql-server
+      - openssh-server
+
+  - name: Create user with weak password
+    user:
+      name: "{{ admin_user }}"
+      password: "{{ admin_pass | password_hash('sha512') }}"
+      shell: /bin/bash
+      groups: sudo
+      append: yes
+
+  - name: Add SSH key (Insecure way)
+    authorized_key:
+      user: "{{ admin_user }}"
+      key: "{{ ssh_key }}"
+
+  - name: Configure SSH (Dangerous)
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^#?PermitRootLogin'
+      line: 'PermitRootLogin yes'
+    notify: Restart SSH
+
+  - name: Set weak file permissions
+    file:
+      path: /etc/nginx/nginx.conf
+      owner: root
+      group: root
+      mode: '0666'      # ← World readable/writable!
+
+  - name: Run dangerous command with shell
+    shell: |
+      echo "root:{{ db_password }}" | chpasswd
+      wget -O- http://un
