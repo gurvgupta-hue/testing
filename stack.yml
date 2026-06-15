@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template with intentional security violations for IaC scanner testing.'
+
+Resources:
+  # 1. Violation: S3 Bucket with Public Read Access and No Encryption
+  S3PublicBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'my-very-insecure-test-bucket-12345'
+      AccessControl: PublicRead
+      # Missing PublicAccessBlockConfiguration
+      # Missing BucketEncryption
+
+  # 2. Violation: Over-privileged IAM Role (Wildcard Admin Actions)
+  InsecureIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: InlineAdminPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+  # 3. Violation: Security Group Open to the Entire Internet on Management Port (SSH)
+  InsecureSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group with overly permissive ingress rules'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0' # Open SSH to the world
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0' # HTTP is fine, but look below
+
+  # 4. Violation: EC2 Instance with Unencrypted EBS Root Volume and Public IP
+  InsecureEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t3.micro
+      ImageId: ami-0c55b159cbfafe1f0 # Example AMI
+      SecurityGroupIds:
+        - !Ref InsecureSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            Encrypted: false # Explicitly unencrypted
