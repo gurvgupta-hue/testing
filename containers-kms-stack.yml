@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template with ECS and KMS policy violations.'
+
+Resources:
+  # 1. Violation: ECS Task Definition Running as Root and Lacking Logging
+  InsecureECSTaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      Family: insecure-app
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: web-app
+          Image: 'nginx:latest'
+          Essential: true
+          Privileged: true # Violation: Containers should not run in privileged mode unless absolutely necessary
+          User: 'root' # Violation: Container should avoid running natively as root
+          # Missing 'LogConfiguration' property for audit trails
+
+  # 2. Violation: KMS Key Policy is Overly Permissive (Allows root account wildcard management)
+  InsecureKMSKey:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      Description: 'An insecure KMS key'
+      Enabled: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: key-default-1
+        Statement:
+          - Sid: Enable Root User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*' # Violation: Wildcard KMS actions can lead to total key management bypass if not scoped properly
+            Resource: '*'
+      # Missing KeyRotationEnabled property
