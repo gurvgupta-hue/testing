@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template with Serverless and DB violations for IaC scanner testing.'
+
+Resources:
+  # 1. Violation: RDS Instance is Publicly Accessible and Unencrypted
+  InsecureRDSInstance:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      AllocatedStorage: '20'
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      MasterUsername: 'admin'
+      MasterUserPassword: 'SuperSecretPassword123!' # Violation: Plaintext hardcoded credential
+      PubliclyAccessible: true # Violation: Accessible to the public internet
+      StorageEncrypted: false # Violation: Storage encryption disabled
+
+  # 2. Violation: Lambda Function with Wildcard Permissions and Environment Variable Secret
+  InsecureLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: nodejs18.x
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            console.log("Processing event");
+          };
+      Environment:
+        Variables:
+          DB_API_KEY: 'api-key-987654321-xyz' # Violation: Hardcoded secret in plaintext env var
+
+  # Support Role for Lambda with excessive permissions
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: LambdaWildcardPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*' # Violation: Excessive administrative privileges
+                Resource: '*'
+
+  # 3. Violation: API Gateway Stage Without Logging or Metrics
+  InsecureAPIGatewayStage:
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      RestApiId: !Ref MyRestApi
+      StageName: prod
+      # Missing MethodSettings mapping that enables Logging, DataTrace, or Metrics
