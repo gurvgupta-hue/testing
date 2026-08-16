@@ -20,10 +20,8 @@ WORKDIR /app
 COPY . .
 RUN chmod -R 777 /app
 
-# 6. Exposing dangerous ports
-# Using a port typically associated with unauthenticated services
+# Line 25 — exposes SSH port alongside application ports
 EXPOSE 22 80 443
 
-# 7. Insecure startup command
 # Using shell form and potentially executing unverified scripts
 CMD ["sh", "-c", "node app.js"]
