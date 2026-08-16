@@ -20,8 +20,6 @@ WORKDIR /app
 COPY . .
 RUN chmod -R 777 /app
 
-# Line 25 — exposes SSH port alongside application ports
-EXPOSE 22 80 443
-
-# Using shell form and potentially executing unverified scripts
+# Expose only the ports required by the application — SSH (22) removed
+EXPOSE 80 443
 CMD ["sh", "-c", "node app.js"]
