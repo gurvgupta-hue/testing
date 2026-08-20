@@ -47,11 +47,10 @@ resource "aws_kms_key" "highly_vulnerable_key" {
 resource "aws_kms_alias" "bad_alias" {
   name          = "my-bad-alias" # KMS-007: Missing 'alias/' prefix
   target_key_id = aws_kms_key.highly_vulnerable_key.key_id
-}
-
 resource "aws_kms_alias" "reserved_alias" {
-  name          = "alias/aws/my-custom-key" # KMS-008: Contains 'aws/' in custom alias
+  name          = "alias/my-custom-key" # Removed reserved alias/aws/ prefix; use a customer-managed alias name
   target_key_id = aws_kms_key.highly_vulnerable_key.key_id
+}
 }
 
 # VIOLATES:
